@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unsold Players</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+
+        #randomBtn {
+            display: block;
+            margin: 0 auto 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #randomBtn:hover {
+            background-color: #1976D2;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: #f9f9f9;
+        }
+
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            margin: 0 auto 20px auto;
+            display: block;
+            box-sizing: border-box;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 400px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+
+        tr.no-results td {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+
+        #downloadBtn {
+            display: block;
+            margin: 10px auto 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #downloadBtn:hover {
+            background-color: #45a049;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            th, td {
+                font-size: 13px;
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Unsold Players</h1>
+
+    <input type="text" id="searchInput" placeholder="Search players by name..." onkeyup="filterTable()">
+
+    <button id="downloadBtn" onclick="downloadPDF()">Download as PDF</button>
+    <button id="randomBtn" onclick="showRandomPlayers()">Show 12 Random Players</button>
+
+
+    <div class="table-wrapper" id="tableSection">
+        <table id="playersTable">
+            <thead>
+                <tr>
+                    <th>SI.NO</th>
+                    <th>Name</th>
+                    <th>Auctioned Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ player.name }}</td>
+                    <td>{{ player.auctioned_value }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No unsold players available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        function filterTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("playersTable");
+            const tr = table.getElementsByTagName("tr");
+            let visibleCount = 0;
+
+            for (let i = 1; i < tr.length; i++) {
+                const tdName = tr[i].getElementsByTagName("td")[1];
+                if (tdName) {
+                    const txtValue = tdName.textContent || tdName.innerText;
+                    if (txtValue.toLowerCase().includes(filter)) {
+                        tr[i].style.display = "";
+                        visibleCount++;
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+
+            if (visibleCount === 0) {
+                if (!document.querySelector(".no-results")) {
+                    const tbody = table.querySelector("tbody");
+                    const noResultsRow = document.createElement("tr");
+                    noResultsRow.className = "no-results";
+                    noResultsRow.innerHTML = `<td colspan="3">No players match your search.</td>`;
+                    tbody.appendChild(noResultsRow);
+                }
+            } else {
+                const noResultsRow = document.querySelector(".no-results");
+                if (noResultsRow) {
+                    noResultsRow.remove();
+                }
+            }
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById("tableSection");
+            const opt = {
+                margin:       0.5,
+                filename:     'unsold_players.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function showRandomPlayers() {
+            const table = document.getElementById("playersTable");
+            const rows = Array.from(table.querySelectorAll("tbody tr")).filter(
+                tr => !tr.classList.contains("no-results")
+            );
+        
+            // Remove "no results" message if it exists
+            const noResultsRow = document.querySelector(".no-results");
+            if (noResultsRow) noResultsRow.remove();
+        
+            // Shuffle rows using Fisher-Yates
+            for (let i = rows.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [rows[i], rows[j]] = [rows[j], rows[i]];
+            }
+        
+            // Hide all rows first
+            rows.forEach(row => row.style.display = "none");
+        
+            // Show only the first 12 shuffled rows
+            rows.slice(0, 12).forEach(row => row.style.display = "");
+        
+            // Clear search input
+            document.getElementById("searchInput").value = "";
+        }
+        
+    </script>
+
+</body>
+</html>

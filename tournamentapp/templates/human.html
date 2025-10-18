@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Players of {{ human.name|upper }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #ff5f6d, #ffc371);
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      font-size: 28px;
+      text-transform: uppercase;
+      margin: 20px 0;
+    }
+
+    .container {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      width: 100%;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      min-width: 400px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      color: #444;
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .no-data {
+      text-align: center;
+      font-style: italic;
+      color: #777;
+      padding: 20px;
+    }
+
+    .download-btn {
+      display: block;
+      margin: 20px auto;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .download-btn:hover {
+      background-color: #1976D2;
+    }
+
+    .release-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 22px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+
+      .download-btn {
+        width: 100%;
+        font-size: 14px;
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="{% url 'home' %}">HOME</a>
+
+  <h1>Players of {{ human.name|upper }}</h1>
+
+  <div class="container" id="pdf-content">
+    <table>
+      <thead>
+        <tr>
+          <th colspan="4" style="font-size: 20px;">Players of {{ human.name|upper }}</th>
+        </tr>
+        <tr>
+          <th>SI.NO</th>
+          <th>Player Name</th>
+          <th>Auctioned Value</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ player.name }}</td>
+          <td>{{ player.auctioned_value }}</td>
+          <td>
+            {% if player.status == 'sold' %}
+            <form method="POST" action="{% url 'release_player' player.id %}" onsubmit="return confirm('Are you sure you want to release this player?');">
+              {% csrf_token %}
+              <button class="release-btn" type="submit">Release</button>
+            </form>
+            {% else %}
+              Unsold
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="no-data">No players have been bought by {{ human.name|upper }} yet.</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td colspan="4"><h3 style="margin-top: 20px;">Balance: {{ human.total }}</h3></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="download-btn" onclick="downloadPDF()">Download as PDF</button>
+
+  <script>
+    function downloadPDF() {
+      const element = document.getElementById('pdf-content');
+      const opt = {
+        margin: 0,
+        filename: '{{ human.name|upper }}_players.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, scrollY: 0, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+
+</body>
+</html>
